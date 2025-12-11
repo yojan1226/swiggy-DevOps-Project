@@ -1,0 +1,63 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Using pre-installed Docker, Trivy, ZAP, and SonarQube"
+
+      # Wait for SonarQube to fully start (important!)
+      - echo "Waiting for SonarQube container..."
+      - sleep 40
+
+      # Verify tools are installed
+      - docker --version
+      - trivy --version
+      - zap -version
+
+  pre_build:
+    commands:
+      - echo "Starting SonarQube Analysis..."
+
+      # Running Sonar Scanner using container
+      - docker run --rm \
+          -e SONAR_HOST_URL="http://localhost:9000" \
+          -e SONAR_LOGIN="$SONAR_TOKEN" \
+          -v $(pwd):/usr/src \
+          sonarsource/sonar-scanner-cli \
+          -Dsonar.projectKey=Swiggy \
+          -Dsonar.projectName=Swiggy \
+          -Dsonar.sources=.
+
+      - echo "Running OWASP ZAP Full Scan"
+      - zap -cmd -quickurl http://localhost:3000 -quickout zap-report.html || true
+
+      - echo "Running Trivy FS Scan"
+      - trivy fs . > trivy-fs-report.txt || true
+
+  build:
+    commands:
+      - echo "Docker Build Started..."
+      - docker build -t swiggy-app .
+
+      # Tag image for DockerHub or ECR
+      - docker tag swiggy-app:latest $DOCKER_REPO_URL:latest
+
+  post_build:
+    commands:
+      - echo "Pushing Docker Image..."
+      - docker push $DOCKER_REPO_URL:latest
+
+      - echo "Performing Trivy Image Scan..."
+      - trivy image $DOCKER_REPO_URL:latest > trivy-image-scan.txt || true
+
+      - echo "Preparing Artifact for CodeDeploy ECS"
+
+      # Create imagedefinitions.json for ECS
+      - printf '[{"name":"swiggy-container","imageUri":"%s"}]' $DOCKER_REPO_URL:latest > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - trivy-fs-report.txt
+    - trivy-image-scan.txt
+    - zap-report.html
