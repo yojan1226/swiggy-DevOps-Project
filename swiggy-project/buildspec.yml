@@ -50,29 +50,30 @@ phases:
                     -Dsonar.login=$SONAR_TOKEN"
 
   build:
-    commands:
-      - echo "Running Trivy filesystem scan..."
-      - |
-        $SSH_CMD "trivy fs --exit-code 1 \
-                  --severity HIGH,CRITICAL \
-                  ~/project/swiggy-project || true"
+   commands:
+     - echo "Running Trivy filesystem scan..."
+     - |
+      $SSH_CMD "trivy fs --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                ~/project/swiggy-project || true"
 
-      - echo "Building React project..."
-      - |
-        $SSH_CMD "cd ~/project/swiggy-project && npm run build"
+     - echo "Building React project..."
+     - |
+      $SSH_CMD "cd ~/project/swiggy-project && npm run build"
 
-      - echo "Logging into DockerHub from EC2..."
-      - |
-        $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
+     - echo "Logging into DockerHub from EC2..."
+     - |
+      $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
-      - echo "Building Docker image on EC2..."
-      - |
-        $SSH_CMD "cd ~/project/swiggy-project && \
-                  docker buildx build --load -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
+     - echo "Building Docker image on EC2..."
+     - |
+      $SSH_CMD "cd ~/project/swiggy-project && \
+                docker build -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
 
-      - echo "Pushing image to DockerHub..."
-      - |
-        $SSH_CMD "docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+     - echo "Pushing image to DockerHub..."
+     - |
+       $SSH_CMD "docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+
 
   post_build:
     commands:
