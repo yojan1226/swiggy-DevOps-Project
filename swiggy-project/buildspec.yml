@@ -69,16 +69,13 @@ phases:
 
       - echo "🐳 Building Docker image..."
       - |
-        $SSH_CMD "export DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME && \
-                  export DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD && \
-                  cd ~/project/swiggy-project && \
-                  docker buildx build --load -t \$DOCKER_REGISTRY_USERNAME/swiggy:latest ."
+        $SSH_CMD 'cd ~/project/swiggy-project && \
+                  docker buildx build --load -t '"$DOCKER_REGISTRY_USERNAME"'/swiggy:latest .'
 
       - echo "📤 Pushing Docker image..."
       - |
-        $SSH_CMD "export DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME && \
-                  export DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD && \
-                  docker push \$DOCKER_REGISTRY_USERNAME/swiggy:latest"
+        $SSH_CMD 'docker push '"$DOCKER_REGISTRY_USERNAME"'/swiggy:latest'
+
 
 
 
