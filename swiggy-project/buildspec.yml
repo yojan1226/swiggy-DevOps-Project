@@ -30,12 +30,12 @@ phases:
       - $SSH_CMD "cd ~/project/swiggy-project && npm install"
 
       - echo "Preparing OWASP Dependency-Check database..."
-      - $SSH_CMD "mkdir -p ~/dependency-check-data"
-      - $SSH_CMD "export DC_DATA_DIR=~/dependency-check-data"
-      - $SSH_CMD "dependency-check.sh --updateonly --data $DC_DATA_DIR || echo 'Database updated or already present'"
+      - $SSH_CMD "mkdir -p ~/dependency-check-data ~/reports"
+      - $SSH_CMD "dependency-check --updateonly --data ~/dependency-check-data || echo 'Database updated or already present'"
 
       - echo "Running OWASP Dependency Check..."
-      - $SSH_CMD "dependency-check --scan ~/project/swiggy-project --out ~/reports/owasp-report --data $DC_DATA_DIR"
+      - $SSH_CMD "dependency-check --scan ~/project/swiggy-project --out ~/reports/owasp-report --data ~/dependency-check-data"
+
 
       - echo "Running SonarQube Scan..."
       - $SSH_CMD "sonar-scanner \
