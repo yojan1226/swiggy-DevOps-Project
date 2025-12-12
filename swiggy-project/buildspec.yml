@@ -1,63 +1,65 @@
 version: 0.2
 
+env:
+  parameter-store:
+    DOCKER_REGISTRY_URL: /myapp/docker-credentials/docker_registry_url
+    DOCKER_REGISTRY_USERNAME: /myapp/docker-credentials/username
+    DOCKER_REGISTRY_PASSWORD: /myapp/docker-credentials/password
+
+    EC2_HOST: /myapp/ec2/host
+    EC2_USER: /myapp/ec2/user
+    EC2_SSH_KEY: /myapp/ec2/shh_key
+
+    SONAR_HOST_URL: /myapp/sonar/url
+    SONAR_TOKEN: /myapp/sonarqube/codebuild-sonar-token
+
 phases:
   install:
     commands:
-      - echo "Using pre-installed Docker, Trivy, ZAP, and SonarQube"
-
-      # Wait for SonarQube to fully start (important!)
-      - echo "Waiting for SonarQube container..."
-      - sleep 40
-
-      # Verify tools are installed
-      - docker --version
-      - trivy --version
-      - zap -version
+      - echo "Starting build on EC2 runner..."
+      - echo "$EC2_SSH_KEY" > key.pem
+      - chmod 600 key.pem
+      - export SSH_CMD="ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST"
 
   pre_build:
     commands:
-      - echo "Starting SonarQube Analysis..."
+      - echo "Installing NPM dependencies..."
+      - $SSH_CMD "cd ~/project && npm install"
 
-      # Running Sonar Scanner using container
-      - docker run --rm \
-          -e SONAR_HOST_URL="http://localhost:9000" \
-          -e SONAR_LOGIN="$SONAR_TOKEN" \
-          -v $(pwd):/usr/src \
-          sonarsource/sonar-scanner-cli \
-          -Dsonar.projectKey=Swiggy \
-          -Dsonar.projectName=Swiggy \
-          -Dsonar.sources=.
+      - echo "Running OWASP Dependency Check..."
+      - $SSH_CMD "dependency-check --scan ~/project --out ~/reports/owasp-report"
 
-      - echo "Running OWASP ZAP Full Scan"
-      - zap -cmd -quickurl http://localhost:3000 -quickout zap-report.html || true
-
-      - echo "Running Trivy FS Scan"
-      - trivy fs . > trivy-fs-report.txt || true
+      - echo "Running SonarQube Scan..."
+      - $SSH_CMD "sonar-scanner \
+          -Dsonar.projectKey=my-react-app \
+          -Dsonar.sources=~/project \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN"
 
   build:
     commands:
-      - echo "Docker Build Started..."
-      - docker build -t swiggy-app .
+      - echo "Running Trivy File System Scan..."
+      - $SSH_CMD "trivy fs --exit-code 1 --severity HIGH,CRITICAL ~/project"
 
-      # Tag image for DockerHub or ECR
-      - docker tag swiggy-app:latest $DOCKER_REPO_URL:latest
+      - echo "Building React App..."
+      - $SSH_CMD "cd ~/project && npm run build"
+
+      - echo "Logging into Docker registry..."
+      - $SSH_CMD "echo $DOCKER_REGISTRY_PASSWORD | docker login -u $DOCKER_REGISTRY_USERNAME --password-stdin $DOCKER_REGISTRY_URL"
+
+      - echo "Building Docker image..."
+      - $SSH_CMD "cd ~/project && docker build -t $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest ."
+
+      - echo "Pushing Docker image..."
+      - $SSH_CMD "docker push $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest"
 
   post_build:
     commands:
-      - echo "Pushing Docker Image..."
-      - docker push $DOCKER_REPO_URL:latest
+      - echo "Scanning built Docker image with Trivy..."
+      - $SSH_CMD "trivy image --exit-code 1 --severity HIGH,CRITICAL $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest"
 
-      - echo "Performing Trivy Image Scan..."
-      - trivy image $DOCKER_REPO_URL:latest > trivy-image-scan.txt || true
-
-      - echo "Preparing Artifact for CodeDeploy ECS"
-
-      # Create imagedefinitions.json for ECS
-      - printf '[{"name":"swiggy-container","imageUri":"%s"}]' $DOCKER_REPO_URL:latest > imagedefinitions.json
+      - echo "Build completed successfully!"
 
 artifacts:
   files:
-    - imagedefinitions.json
-    - trivy-fs-report.txt
-    - trivy-image-scan.txt
-    - zap-report.html
+    - '**/*'
