@@ -24,21 +24,36 @@ phases:
   pre_build:
     commands:
       - echo "Cloning or updating project dynamically..."
-      - $SSH_CMD "if [ -d ~/project ]; then cd ~/project && git pull; else git clone https://github.com/yojan1226/swiggy-DevOps-Project.git ~/project; fi"
+      - |
+        $SSH_CMD "if [ -d ~/project ]; then 
+                     cd ~/project && git pull; 
+                   else 
+                     git clone https://github.com/yojan1226/swiggy-DevOps-Project.git ~/project; 
+                   fi"
 
       - echo "Installing NPM dependencies..."
       - $SSH_CMD "cd ~/project/swiggy-project && npm install"
 
-      - echo "Preparing OWASP Dependency-Check database..."
-      - $SSH_CMD "mkdir -p ~/dependency-check-data ~/reports"
-      - $SSH_CMD "dependency-check --updateonly --data ~/dependency-check-data || echo 'Database updated or already present'"
+      - echo "Pulling OWASP Dependency-Check Docker image..."
+      - $SSH_CMD "docker pull owasp/dependency-check"
 
-      - echo "Running OWASP Dependency Check..."
-      - $SSH_CMD "dependency-check --scan ~/project/swiggy-project --out ~/reports/owasp-report --data ~/dependency-check-data"
-
+      - echo "Running OWASP Dependency Check via Docker..."
+      - |
+        $SSH_CMD "mkdir -p ~/dependency-check-data ~/dependency-check-reports"
+      - |
+        $SSH_CMD "docker run --rm \
+          -v ~/dependency-check-data:/usr/share/dependency-check/data \
+          -v ~/dependency-check-reports:/report \
+          -v ~/project/swiggy-project:/src \
+          owasp/dependency-check:latest \
+          --scan /src \
+          --format ALL \
+          --out /report \
+          --noupdate"
 
       - echo "Running SonarQube Scan..."
-      - $SSH_CMD "sonar-scanner \
+      - |
+        $SSH_CMD "sonar-scanner \
           -Dsonar.projectKey=my-react-app \
           -Dsonar.sources=~/project/swiggy-project \
           -Dsonar.host.url=$SONAR_HOST_URL \
@@ -53,18 +68,30 @@ phases:
       - $SSH_CMD "cd ~/project/swiggy-project && npm run build"
 
       - echo "Logging into Docker registry..."
-      - $SSH_CMD "echo $DOCKER_REGISTRY_PASSWORD | docker login -u $DOCKER_REGISTRY_USERNAME --password-stdin $DOCKER_REGISTRY_URL"
+      - |
+        $SSH_CMD "echo $DOCKER_REGISTRY_PASSWORD | \
+          docker login -u $DOCKER_REGISTRY_USERNAME --password-stdin $DOCKER_REGISTRY_URL"
 
       - echo "Building Docker image..."
-      - $SSH_CMD "cd ~/project/swiggy-project && docker build -t $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest ."
+      - |
+        $SSH_CMD "cd ~/project/swiggy-project && \
+          docker build -t $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest ."
 
       - echo "Pushing Docker image..."
-      - $SSH_CMD "docker push $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest"
+      - |
+        $SSH_CMD "docker push \
+          $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest"
 
   post_build:
     commands:
       - echo "Scanning built Docker image with Trivy..."
-      - $SSH_CMD "trivy image --exit-code 1 --severity HIGH,CRITICAL $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest"
+      - |
+        $SSH_CMD "trivy image --exit-code 1 --severity HIGH,CRITICAL \
+          $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest"
+
+      - echo "Copying OWASP reports back to CodeBuild..."
+      - scp -o StrictHostKeyChecking=no -i key.pem \
+          $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
 
       - echo "Build completed successfully!"
 
