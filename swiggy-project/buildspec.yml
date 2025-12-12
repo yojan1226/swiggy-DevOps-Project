@@ -80,17 +80,19 @@ phases:
 
 
   post_build:
-    commands:
-      - echo "Scanning pushed image with Trivy..."
-      - |
-        $SSH_CMD "trivy image --exit-code 1 \
-                  --severity HIGH,CRITICAL \
-                  ${DOCKER_REGISTRY_USERNAME}/swiggy:latest || true"
+   commands:
+     - echo "Scanning pushed image with Trivy..."
+     - |
+       $SSH_CMD "DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
+                trivy image --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                \${DOCKER_USER}/swiggy:latest || true"
 
-      - echo "Copying OWASP report back to CodeBuild..."
-      - |
-        scp -o StrictHostKeyChecking=no -i key.pem \
-          $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
+     - echo "Copying OWASP report back to CodeBuild..."
+     - |
+       scp -o StrictHostKeyChecking=no -i key.pem \
+        $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
+
 
 artifacts:
   files:
