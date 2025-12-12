@@ -70,11 +70,12 @@ phases:
       - echo "🐳 Building Docker image..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && \
-                  docker build -t $DOCKER_REGISTRY_USERNAME/swiggy:latest ."
+                  docker build -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
 
       - echo "📤 Pushing Docker image..."
       - |
-        $SSH_CMD "docker push $DOCKER_REGISTRY_USERNAME/swiggy:latest"
+        $SSH_CMD "docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+
 
   post_build:
     commands:
