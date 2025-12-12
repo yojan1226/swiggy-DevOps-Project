@@ -2,8 +2,7 @@ version: 0.2
 
 env:
   parameter-store:
-    DOCKER_REGISTRY_URL: /myapp/docker-credentials/docker_registry_url   # docker.io
-    DOCKER_REGISTRY_USERNAME: /myapp/docker-credentials/username        # honey120ar
+    DOCKER_REGISTRY_USERNAME: /myapp/docker-credentials/username
     DOCKER_REGISTRY_PASSWORD: /myapp/docker-credentials/password
 
     EC2_HOST: /myapp/ec2/host
@@ -16,24 +15,23 @@ env:
 phases:
   install:
     commands:
-      - echo "Starting build on EC2 runner..."
+      - echo "Preparing SSH key..."
       - echo "$EC2_SSH_KEY" > key.pem
       - chmod 600 key.pem
-
       - export SSH_CMD="ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST"
 
   pre_build:
     commands:
-      - echo "🔥 Fresh cloning repository into EC2..."
+      - echo "Cloning fresh repository in EC2..."
       - |
         $SSH_CMD "sudo rm -rf ~/project && \
                   git clone https://github.com/yojan1226/swiggy-DevOps-Project.git ~/project"
 
-      - echo "📦 Installing NPM dependencies..."
+      - echo "Installing NPM dependencies..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && npm install"
 
-      - echo "🛡 Running OWASP Dependency-Check..."
+      - echo "Running OWASP dependency-check..."
       - |
         $SSH_CMD "mkdir -p ~/dependency-check-reports ~/dependency-check-data && \
                   dependency-check \
@@ -42,7 +40,7 @@ phases:
                     --data ~/dependency-check-data \
                     --noupdate || echo 'OWASP warnings ignored'"
 
-      - echo "🔍 Running SonarQube Scan..."
+      - echo "Running SonarQube Scanner..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && \
                   sonar-scanner \
@@ -53,43 +51,41 @@ phases:
 
   build:
     commands:
-      - echo "🧪 Running Trivy FS Scan..."
+      - echo "Running Trivy filesystem scan..."
       - |
         $SSH_CMD "trivy fs --exit-code 1 \
                   --severity HIGH,CRITICAL \
                   ~/project/swiggy-project || true"
 
-      - echo "⚛️ Building React App..."
+      - echo "Building React project..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && npm run build"
 
-      - echo "🔐 Logging into DockerHub..."
+      - echo "Logging into DockerHub from EC2..."
       - |
         $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
-      - echo "🐳 Building Docker image..."
+      - echo "Building Docker image on EC2..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && \
-                  docker buildx build --load -t $DOCKER_REGISTRY_USERNAME/swiggy:latest ."
+                  docker buildx build --load -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
 
-      - echo "📤 Pushing Docker image..."
+      - echo "Pushing image to DockerHub..."
       - |
-        $SSH_CMD "docker push $DOCKER_REGISTRY_USERNAME/swiggy:latest"
+        $SSH_CMD "docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
 
   post_build:
     commands:
-      - echo "🔍 Scanning Docker image with Trivy..."
+      - echo "Scanning pushed image with Trivy..."
       - |
         $SSH_CMD "trivy image --exit-code 1 \
                   --severity HIGH,CRITICAL \
-                  $DOCKER_REGISTRY_USERNAME/swiggy:latest || true"
+                  ${DOCKER_REGISTRY_USERNAME}/swiggy:latest || true"
 
-      - echo "📥 Copying OWASP reports to CodeBuild..."
+      - echo "Copying OWASP report back to CodeBuild..."
       - |
         scp -o StrictHostKeyChecking=no -i key.pem \
-            $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
-
-      - echo "🎉 Build completed successfully!"
+          $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
 
 artifacts:
   files:
