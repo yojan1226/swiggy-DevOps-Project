@@ -23,6 +23,9 @@ phases:
 
   pre_build:
     commands:
+      - echo "Cloning or updating project dynamically..."
+      - $SSH_CMD "if [ -d ~/project ]; then cd ~/project && git pull; else git clone https://github.com/yojan1226/swiggy-DevOps-Project.git ~/project; fi"
+
       - echo "Installing NPM dependencies..."
       - $SSH_CMD "cd ~/project && npm install"
 
