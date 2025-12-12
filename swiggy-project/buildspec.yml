@@ -63,16 +63,20 @@ phases:
 
       - echo "Logging into DockerHub from EC2..."
       - |
-        $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
+        $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" \
+                  | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
       - echo "Building Docker image on EC2..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && \
-                  docker build -t \${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
+                  DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
+                  docker build -t \${DOCKER_USER}/swiggy:latest ."
 
       - echo "Pushing image to DockerHub..."
       - |
-        $SSH_CMD "docker push \${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+        $SSH_CMD "DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
+                  docker push \${DOCKER_USER}/swiggy:latest"
+
 
 
   post_build:
