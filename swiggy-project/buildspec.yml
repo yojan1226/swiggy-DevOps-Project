@@ -27,31 +27,31 @@ phases:
       - $SSH_CMD "if [ -d ~/project ]; then cd ~/project && git pull; else git clone https://github.com/yojan1226/swiggy-DevOps-Project.git ~/project; fi"
 
       - echo "Installing NPM dependencies..."
-      - $SSH_CMD "cd ~/project && npm install"
+      - $SSH_CMD "cd ~/project/swiggy-project && npm install"
 
       - echo "Running OWASP Dependency Check..."
-      - $SSH_CMD "dependency-check --scan ~/project --out ~/reports/owasp-report"
+      - $SSH_CMD "dependency-check --scan ~/project/swiggy-project --out ~/reports/owasp-report"
 
       - echo "Running SonarQube Scan..."
       - $SSH_CMD "sonar-scanner \
           -Dsonar.projectKey=my-react-app \
-          -Dsonar.sources=~/project \
+          -Dsonar.sources=~/project/swiggy-project \
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN"
 
   build:
     commands:
       - echo "Running Trivy File System Scan..."
-      - $SSH_CMD "trivy fs --exit-code 1 --severity HIGH,CRITICAL ~/project"
+      - $SSH_CMD "trivy fs --exit-code 1 --severity HIGH,CRITICAL ~/project/swiggy-project"
 
       - echo "Building React App..."
-      - $SSH_CMD "cd ~/project && npm run build"
+      - $SSH_CMD "cd ~/project/swiggy-project && npm run build"
 
       - echo "Logging into Docker registry..."
       - $SSH_CMD "echo $DOCKER_REGISTRY_PASSWORD | docker login -u $DOCKER_REGISTRY_USERNAME --password-stdin $DOCKER_REGISTRY_URL"
 
       - echo "Building Docker image..."
-      - $SSH_CMD "cd ~/project && docker build -t $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest ."
+      - $SSH_CMD "cd ~/project/swiggy-project && docker build -t $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest ."
 
       - echo "Pushing Docker image..."
       - $SSH_CMD "docker push $DOCKER_REGISTRY_URL/$DOCKER_REGISTRY_USERNAME/react-app:latest"
