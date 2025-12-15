@@ -44,7 +44,7 @@ phases:
       - |
         $SSH_CMD "cd ~/project/swiggy-project && \
                   sonar-scanner \
-                    -Dsonar.projectKey=swiggy-react-app \
+                    -Dsonar.projectKey=my-react-app \
                     -Dsonar.sources=. \
                     -Dsonar.host.url=$SONAR_HOST_URL \
                     -Dsonar.login=$SONAR_TOKEN"
@@ -69,32 +69,31 @@ phases:
       - echo "Building Docker image on EC2..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && \
-                  docker build -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
+                  DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
+                  docker build -t \${DOCKER_USER}/swiggy:latest ."
 
       - echo "Pushing image to DockerHub..."
       - |
-        $SSH_CMD "docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+        $SSH_CMD "DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
+                  docker push \${DOCKER_USER}/swiggy:latest"
+
+
 
   post_build:
-    commands:
-      - echo "Scanning pushed image with Trivy..."
-      - |
-        $SSH_CMD "trivy image --exit-code 1 \
-                  --severity HIGH,CRITICAL \
-                  ${DOCKER_REGISTRY_USERNAME}/swiggy:latest || true"
+   commands:
+     - echo "Scanning pushed image with Trivy..."
+     - |
+       $SSH_CMD "DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
+                trivy image --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                \${DOCKER_USER}/swiggy:latest || true"
 
-      - echo "Generating imageDetail.json for CodeDeploy ECS..."
-      - |
-        printf '{"ImageURI":"%s"}' \
-        "${DOCKER_REGISTRY_USERNAME}/swiggy:latest" > imageDetail.json
+     - echo "Copying OWASP report back to CodeBuild..."
+     - |
+       scp -o StrictHostKeyChecking=no -i key.pem \
+        $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
 
-      - echo "Copying OWASP report back to CodeBuild..."
-      - |
-        scp -o StrictHostKeyChecking=no -i key.pem \
-          $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
 
 artifacts:
   files:
-    - appspec.yaml
-    - taskdef.json
-    - imageDetail.json
+    - '**/*'
