@@ -1,0 +1,30 @@
+{
+  "family": "swiggy-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::122931672162:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::122931672162:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "swiggy-container",
+      "image": "<IMAGE_URI>",
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/swiggy-task",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

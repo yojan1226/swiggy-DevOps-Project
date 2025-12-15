@@ -105,3 +105,4 @@ artifacts:
   files:
     - appspec.yaml
     - imagedetails.json
+    
