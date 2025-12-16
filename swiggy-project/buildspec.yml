@@ -95,8 +95,9 @@ phases:
 
      - echo "Generating imagedetails.json for CodeDeploy ECS..."
      - |
-       printf '[{"name":"swiggy-container","imageUri":"%s"}]' \
-       "${DOCKER_REGISTRY_USERNAME}/swiggy:latest" > imagedetails.json
+       IMAGE_URI="$(echo "${DOCKER_REGISTRY_USERNAME}" | tr -d '\n')/swiggy:latest"
+       printf '[{"name":"swiggy-container","imageUri":"%s"}]' "$IMAGE_URI" > imagedetails.json
+
 
      - echo "imagedetails.json generated:"
      - cat imagedetails.json
