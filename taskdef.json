@@ -1,7 +1,7 @@
 {
   "family": "swiggy-task",
-  "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "bridge",
+  "requiresCompatibilities": ["EC2"],
   "cpu": "256",
   "memory": "512",
   "executionRoleArn": "arn:aws:iam::122931672162:role/ecsTaskExecutionRole",
@@ -10,13 +10,14 @@
     {
       "name": "swiggy-container",
       "image": "<IMAGE_URI>",
+      "essential": true,
       "portMappings": [
         {
           "containerPort": 3000,
+          "hostPort": 0,
           "protocol": "tcp"
         }
       ],
-      "essential": true,
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
