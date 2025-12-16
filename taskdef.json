@@ -5,7 +5,7 @@
   "containerDefinitions": [
     {
       "name": "swiggy-container",
-      "image": "nginx:latest",
+      "image": "<IMAGE_URI>",
       "essential": true,
       "memoryReservation": 256,
       "portMappings": [
