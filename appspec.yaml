@@ -1,11 +1,27 @@
-version: 1
+version: 0.0
 
 Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        TaskDefinition:
-          File: taskdef.json
+        TaskDefinition: taskdef.json
         LoadBalancerInfo:
           ContainerName: swiggy-container
           ContainerPort: 3000
+        PlatformVersion: LATEST
+
+Hooks:
+  BeforeInstall:
+    - location: before_install.sh
+      timeout: 300
+      runas: root
+
+  AfterInstall:
+    - location: after_install.sh
+      timeout: 300
+      runas: root
+
+  ApplicationStart:
+    - location: start.sh
+      timeout: 300
+      runas: root

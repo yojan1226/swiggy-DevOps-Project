@@ -2,10 +2,11 @@
   "family": "swiggy-task",
   "networkMode": "bridge",
   "requiresCompatibilities": ["EC2"],
+  "executionRoleArn": "arn:aws:iam::122931672162:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "swiggy-container",
-      "image": "<IMAGE_URI>",
+      "image": "honey120ar/swiggy:latest",
       "essential": true,
       "memoryReservation": 256,
       "portMappings": [
@@ -14,15 +15,7 @@
           "hostPort": 0,
           "protocol": "tcp"
         }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/swiggy-task",
-          "awslogs-region": "ap-south-1",
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
+      ]
     }
   ]
 }

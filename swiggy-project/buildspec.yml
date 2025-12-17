@@ -108,5 +108,7 @@ phases:
 artifacts:
   files:
     - appspec.yaml
-    - imagedetails.json
     - taskdef.json
+    - after_install.sh
+    - before_install.sh
+    - start.sh
