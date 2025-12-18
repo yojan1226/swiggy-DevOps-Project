@@ -93,22 +93,9 @@ phases:
        scp -o StrictHostKeyChecking=no -i key.pem \
         $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
 
-     - echo "Generating imagedetails.json for CodeDeploy ECS..."
-     - |
-       IMAGE_URI="$(echo "${DOCKER_REGISTRY_USERNAME}" | tr -d '\n')/swiggy:latest"
-       printf '[{"name":"swiggy-container","imageUri":"%s"}]' "$IMAGE_URI" > imagedetails.json
-
-
-     - echo "imagedetails.json generated:"
-     - cat imagedetails.json
-
-
-
 
 artifacts:
   files:
     - appspec.yaml
     - taskdef.json
-    - after_install.sh
-    - before_install.sh
-    - start.sh
+  

@@ -16,8 +16,11 @@ COPY . .
 # Buildinf of the React app
 RUN npm run build
 
+# installation of g serve
+RUN npm install -g serve
+
 # Expose port 3000 to access app
 EXPOSE 3000
 
 # Start your Node.js server
-CMD ["npm", "start"]
+CMD ["serve", "-s", "build", "-l", "3000"]
