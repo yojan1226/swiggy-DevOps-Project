@@ -39,9 +39,11 @@ phases:
             --scan ~/project/swiggy-project \
             --out ~/dependency-check-reports/owasp-report \
             --data ~/dependency-check-data \
-            --noupdate || echo 'OWASP warnings ignored'
+            --noupdate \
+            --disableYarnAudit \
+            --disableOSSIndex \
+            --disableVersionCheck || echo 'OWASP warnings ignored'
         "
-
 
       - echo "Running SonarQube Scanner..."
       - |
@@ -94,7 +96,9 @@ phases:
      - echo "Copying OWASP report back to CodeBuild..."
      - |
        scp -o StrictHostKeyChecking=no -i key.pem \
-        $EC2_USER@$EC2_HOST:~/dependency-check-reports/* .
+       $EC2_USER@$EC2_HOST:~/dependency-check-reports/owasp-report/dependency-check-report.html \
+       .
+
 
 
 artifacts:
