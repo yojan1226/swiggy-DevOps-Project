@@ -33,13 +33,15 @@ phases:
 
       - echo "Running OWASP dependency-check (clean DB)..."
       - |
-        $SSH_CMD "mkdir -p ~/dependency-check-reports ~/dependency-check-data && \
-            dependency-check --purge --data ~/dependency-check-data && \
-            dependency-check --updateonly --nvdApiKey $NVD_API_KEY --data ~/dependency-check-data && \
-            dependency-check \
-              --scan ~/project/swiggy-project \
-              --out ~/dependency-check-reports/owasp-report \
-              --data ~/dependency-check-data || echo 'OWASP warnings ignored'"
+        $SSH_CMD "
+          mkdir -p ~/dependency-check-reports ~/dependency-check-data && \
+          dependency-check --purge --data ~/dependency-check-data && \
+          dependency-check --updateonly --nvdApiKey '${NVD_API_KEY}' --data ~/dependency-check-data && \
+          dependency-check \
+            --scan ~/project/swiggy-project \
+            --out ~/dependency-check-reports/owasp-report \
+            --data ~/dependency-check-data || echo 'OWASP warnings ignored'
+        "
 
 
       - echo "Running SonarQube Scanner..."
