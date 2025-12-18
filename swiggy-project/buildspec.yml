@@ -39,11 +39,9 @@ phases:
             --scan ~/project/swiggy-project \
             --out ~/dependency-check-reports/owasp-report \
             --data ~/dependency-check-data \
-            --noupdate \
-            --disableYarnAudit \
-            --disableOSSIndex \
-            --disableVersionCheck || echo 'OWASP warnings ignored'
+            --noupdate || echo 'OWASP warnings ignored'
         "
+
 
       - echo "Running SonarQube Scanner..."
       - |
