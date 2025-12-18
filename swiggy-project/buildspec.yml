@@ -34,9 +34,10 @@ phases:
       - echo "Running OWASP dependency-check (clean DB)..."
       - |
         $SSH_CMD "
+          export NVD_API_KEY=${NVD_API_KEY} && \
           mkdir -p ~/dependency-check-reports ~/dependency-check-data && \
           dependency-check --purge --data ~/dependency-check-data || true && \
-          dependency-check --updateonly --nvdApiKey '${NVD_API_KEY}' --data ~/dependency-check-data && \
+          dependency-check --updateonly --nvdApiKey ${NVD_API_KEY} --data ~/dependency-check-data && \
           dependency-check \
             --scan ~/project/swiggy-project \
             --out ~/dependency-check-reports/owasp-report \
