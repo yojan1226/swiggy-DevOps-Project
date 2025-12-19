@@ -79,6 +79,9 @@ The architecture follows a DevSecOps-driven CI/CD workflow where security and qu
 
 🔄 Code flows from GitHub → CodePipeline → CodeBuild → DockerHub → CodeDeploy → ECS → ALB → Users
 
+![Architecture Diagram](images/1.png)
+
+
 
 🔐 DevSecOps Security Scans
 
