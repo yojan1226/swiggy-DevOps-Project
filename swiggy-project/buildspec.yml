@@ -34,12 +34,12 @@ phases:
       - echo "Running OWASP Dependency-Check (Node.js, NO UPDATE)..."
       - |
         $SSH_CMD "
-          set -e
           mkdir -p ~/dependency-check-reports ~/dependency-check-data && \
           ~/dependency-check/bin/dependency-check.sh \
             --scan ~/project/swiggy-project \
             --out ~/dependency-check-reports/owasp-report \
             --data ~/dependency-check-data \
+            --enableExperimental \
             --noupdate || echo 'OWASP Dependency-Check warnings ignored'
         "
 
