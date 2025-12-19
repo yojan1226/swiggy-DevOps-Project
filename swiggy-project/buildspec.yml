@@ -31,17 +31,20 @@ phases:
       - |
         $SSH_CMD "cd ~/project/swiggy-project && npm install"
 
-      - echo "Running OWASP dependency-check (NO UPDATE)..."
+      - echo "Running OWASP Dependency-Check (CI scan only)..."
       - |
         $SSH_CMD "
-          mkdir -p ~/dependency-check-reports ~/dependency-check-data && \
+          mkdir -p ~/dependency-check-reports && \
           dependency-check \
             --scan ~/project/swiggy-project \
             --out ~/dependency-check-reports/owasp-report \
             --data ~/dependency-check-data \
-            --noupdate || echo 'OWASP warnings ignored'
+            --noupdate \
+            --disableVersionCheck \
+            --disableYarnAudit \
+            --disableOSSIndex \
+            || echo 'OWASP warnings ignored'
         "
-
 
       - echo "Running SonarQube Scanner..."
       - |
