@@ -1,168 +1,186 @@
 🚀 DevSecOps Blue-Green Deployment of Swiggy Clone on AWS ECS
 
-This project demonstrates an end-to-end DevSecOps CI/CD pipeline that deploys a Swiggy Clone React application on AWS ECS (EC2 launch type) using Blue-Green deployment with AWS CodeDeploy, Application Load Balancer, and multiple security scanning tools.
+This project demonstrates an end-to-end DevSecOps CI/CD pipeline that deploys a Swiggy Clone React application on AWS ECS (EC2 launch type) using a Blue-Green deployment strategy.
+
+The solution integrates security at every stage, ensures zero downtime, and follows real-world DevOps & DevSecOps best practices.
 
 📌 Project Overview
 
-The goal of this project is to implement a secure, scalable, and zero-downtime deployment strategy using DevSecOps best practices.
+The main objective of this project is to design and implement a secure, scalable, and automated deployment pipeline using AWS services and open-source security tools.
 
-🔑 Key Highlights
+🔹 Focus areas:
 
-Infrastructure provisioned using Terraform
+- Infrastructure as Code (IaC)
 
-CI/CD pipeline using AWS CodePipeline & CodeBuild
+- CI/CD automation
 
-DevSecOps security scans integrated into the pipeline
+- DevSecOps security scanning
 
-Blue-Green deployment on AWS ECS
+- Zero-downtime deployments
 
-Zero downtime deployments using ALB traffic shifting
+✨ Key Highlights
+
+- 🏗️ Infrastructure provisioned using Terraform
+
+- 🔁 CI/CD pipeline using AWS CodePipeline & CodeBuild
+
+- 🔐 Integrated DevSecOps security scans
+
+- 🔵🟢 Blue-Green deployment on AWS ECS
+
+- ⚖️ Zero downtime using ALB traffic shifting
+
+- 🔄 Automatic rollback on deployment failure
 
 🛠️ Tech Stack
 ☁️ Cloud & Infrastructure
 
-AWS VPC, Subnets
+- AWS VPC & Subnets
 
-AWS ECS (EC2 Launch Type)
+- AWS ECS (EC2 Launch Type)
 
-AWS Application Load Balancer (ALB)
+- AWS Application Load Balancer (ALB)
 
-AWS Auto Scaling Group
+- AWS Auto Scaling Group
 
-AWS CodeDeploy
+- AWS CodeDeploy
 
-AWS CodePipeline
+- AWS CodePipeline
 
-AWS Systems Manager Parameter Store
+- AWS Systems Manager Parameter Store
 
-Terraform (IaC)
+- Terraform (Infrastructure as Code)
 
 🔧 CI/CD & DevSecOps Tools
 
-AWS CodeBuild
+- AWS CodeBuild
 
-SonarQube (Code Quality & Security)
+- SonarQube (Code Quality & Security Analysis)
 
-OWASP Dependency-Check
+- OWASP Dependency-Check
 
-Trivy (Filesystem & Image Scan)
+T- rivy (Filesystem & Docker Image Scan)
 
-Docker & DockerHub
+- Docker & DockerHub
 
-GitHub
+- GitHub
 
-🌐 Application
+🌐 Application Stack
 
-React (Swiggy Clone)
+- React (Swiggy Clone UI)
 
-Node.js
+- Node.js
 
-Nginx / Serve
+- Serve (Static file hosting)
 
 🏗️ Architecture Overview
-![alt text](1.png)
+
+The architecture follows a DevSecOps-driven CI/CD workflow where security and quality checks are performed before deployment, and traffic is safely shifted using Blue-Green deployment.
+
+🔄 Code flows from GitHub → CodePipeline → CodeBuild → DockerHub → CodeDeploy → ECS → ALB → Users
+
 
 🔐 DevSecOps Security Scans
 
-The pipeline integrates security at every stage:
+Security is integrated at multiple stages of the pipeline:
 
 Tool	Purpose
-SonarQube	Code quality, bugs, vulnerabilities
+SonarQube	Code quality analysis, bugs & security vulnerabilities
 OWASP Dependency-Check	Detect vulnerable third-party libraries using NVD CVEs
-Trivy FS Scan	Scan source code & dependencies
-Trivy Image Scan	Scan Docker image for vulnerabilities
+Trivy (FS Scan)	Scan source code and dependencies
+Trivy (Image Scan)	Scan Docker images for vulnerabilities
 
-If high or critical vulnerabilities are detected, the pipeline can stop deployment.
+🚫 If high or critical vulnerabilities are detected, the pipeline can block deployment.
 
 🔁 Blue-Green Deployment Strategy
 
-Blue → Current production version
+🔵 Blue → Current production version
 
-Green → New version
+🟢 Green → New application version
 
-ALB routes traffic using two target groups
+How it works:
 
-CodeDeploy manages:
+- ALB maintains two target groups
 
-Health checks
+- CodeDeploy deploys the new version to Green
 
-Traffic shifting
+- Health checks are performed
 
-Automatic rollback on failure
+- Traffic is shifted Blue → Green
 
-✅ Ensures zero downtime
+- Automatic rollback occurs on failure
 
+✅ Ensures zero downtime and safe releases
 
 📄 Important Configuration Files
 🔹 buildspec.yaml
 
-Defines build steps in CodeBuild
+Used by AWS CodeBuild to:
 
-Runs:
+- Install dependencies
 
-Dependency installation
+- Run security scans
 
-Security scans
+- Build Docker image
 
-Docker build & push
+- Push image to DockerHub
 
-Pulls secrets from SSM Parameter Store
+- Fetch secrets from SSM Parameter Store
 
 🔹 appspec.yaml
 
-Used by CodeDeploy to:
+- Used by AWS CodeDeploy to:
 
-Identify ECS service
+- Identify ECS service
 
-Apply new task definition
+- Apply new task definition
 
-Control ALB traffic for Blue-Green deployment
+- Manage ALB traffic during Blue-Green deployment
 
 🔹 taskdef.json
 
-Defines:
+- Defines ECS container configuration:
 
-Docker image
+- Docker image
 
-Port mappings
+- Port mappings
 
-Memory settings
+- Memory allocation
 
 Container name
 
 🚀 Deployment Flow
 
-Developer pushes code to GitHub
+- Developer pushes code to GitHub
 
-CodePipeline triggers CodeBuild
+- AWS CodePipeline is triggered
 
-CodeBuild:
+- AWS CodeBuild:
 
-Runs security scans
+- Runs DevSecOps security scans
 
-Builds Docker image
+- Builds Docker image
 
-Pushes image to DockerHub
+- Pushes image to DockerHub
 
-CodeDeploy:
+AWS CodeDeploy:
 
-Deploys new version to Green
+- Deploys new version to Green
 
-Performs health checks
+- Performs health checks
 
-Shifts traffic from Blue → Green
+- Shifts traffic from Blue → Green
 
-Old version is terminated after success
-
+- Old version is terminated after successful    deployment
 
 ✅ Key Learnings
 
-Practical DevSecOps implementation
+- Hands-on DevSecOps pipeline implementation
 
-Blue-Green deployment on ECS
+- Real-world Blue-Green deployment on ECS
 
-Security scanning in CI/CD
+- Integrating security into CI/CD
 
-Terraform for scalable AWS infrastructure
+- Using Terraform for scalable infrastructure
 
-Real-world debugging & pipeline optimization
+- Debugging CI/CD and production deployment issues
