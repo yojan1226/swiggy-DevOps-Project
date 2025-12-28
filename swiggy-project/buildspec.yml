@@ -14,6 +14,7 @@ env:
     GITHUB_TOKEN: /myapp/github/pat-token
 
 phases:
+
   install:
     commands:
       - echo "Preparing SSH key..."
@@ -32,7 +33,7 @@ phases:
       - |
         $SSH_CMD "cd ~/project/swiggy-project && npm install"
 
-      - echo "Running OWASP Dependency-Check (CI scan only)..."
+      - echo "Running OWASP Dependency-Check..."
       - |
         $SSH_CMD "
           mkdir -p ~/dependency-check-reports && \
@@ -44,7 +45,6 @@ phases:
             --disableVersionCheck \
             || echo 'OWASP warnings ignored'
         "
-
 
       - echo "Running SonarQube Scanner..."
       - |
@@ -67,32 +67,28 @@ phases:
       - |
         $SSH_CMD "cd ~/project/swiggy-project && npm run build"
 
-      - echo "Logging into DockerHub from EC2..."
+      - echo "Logging into DockerHub..."
       - |
         $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" \
                   | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
-      - echo "Building Docker image on EC2..."
+      # 🔹 Build image with fully-resolved name (important!)
+      - echo "Building Docker image..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && \
-                  DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
-                  docker build -t \${DOCKER_USER}/swiggy:latest ."
+                  docker build -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
 
-      - echo "Pushing image to DockerHub..."
+      - echo "Pushing latest image..."
       - |
-        $SSH_CMD "DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
-                  docker push \${DOCKER_USER}/swiggy:latest"
-
-
+        $SSH_CMD "docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
 
   post_build:
     commands:
       - echo "Scanning pushed image with Trivy..."
       - |
-        $SSH_CMD "DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
-                 trivy image --exit-code 1 \
+        $SSH_CMD "trivy image --exit-code 1 \
                  --severity HIGH,CRITICAL \
-                 \${DOCKER_USER}/swiggy:latest || true"
+                 ${DOCKER_REGISTRY_USERNAME}/swiggy:latest || true"
 
       - echo "Copying OWASP report back to CodeBuild..."
       - |
@@ -104,6 +100,7 @@ phases:
       - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-7)
       - echo "IMAGE_TAG = $IMAGE_TAG"
 
+      # 🔹 Tag + push versioned image (now succeeds)
       - echo "Tagging & pushing versioned Docker image..."
       - |
         $SSH_CMD "
@@ -111,6 +108,7 @@ phases:
           docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}
         "
 
+      # 🔹 Update Kubernetes manifest in GitHub
       - echo "Updating Kubernetes deployment.yaml in GitHub..."
       - |
         $SSH_CMD "
@@ -128,10 +126,7 @@ phases:
           git push origin HEAD:main
         "
 
-
-
 artifacts:
   files:
     - appspec.yaml
     - taskdef.json
-  
