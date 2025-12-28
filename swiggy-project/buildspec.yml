@@ -107,7 +107,7 @@ phases:
       - echo "Tagging & pushing versioned Docker image..."
       - |
         $SSH_CMD "
-          DOCKER_USER=$DOCKER_REGISTRY_USERNAME && \
+          DOCKER_USER=$DOCKER_REGISTRY_USERNAME; \
           docker tag \${DOCKER_USER}/swiggy:latest \${DOCKER_USER}/swiggy:${IMAGE_TAG} && \
           docker push \${DOCKER_USER}/swiggy:${IMAGE_TAG}
         "
