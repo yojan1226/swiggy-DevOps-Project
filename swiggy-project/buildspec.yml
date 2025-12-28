@@ -75,8 +75,8 @@ phases:
       # 🔹 Build image with fully-resolved name (important!)
       - echo "Building Docker image..."
       - |
-        $SSH_CMD "cd ~/project/swiggy-project && \
-                  docker build -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
+        $SSH_CMD "cd ~/project/swiggy-project && docker build -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ."
+
 
       - echo "Pushing latest image..."
       - |
