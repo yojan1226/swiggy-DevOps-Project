@@ -73,14 +73,14 @@ phases:
                   | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
       - echo "Preparing image name..."
-      - export IMAGE_NAME="${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+      - export IMAGE_NAME="docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
       - echo "Using image: $IMAGE_NAME"
 
       # 🔹 Build image with fully-resolved name (important!)
       - echo "Building Docker image..."
       - |
         $SSH_CMD "cd ~/project/swiggy-project && \
-                  docker build -t $IMAGE_NAME ."
+            docker build -t $IMAGE_NAME ."
 
 
       - echo "Pushing latest image..."
@@ -95,7 +95,7 @@ phases:
       - |
         $SSH_CMD "trivy image --exit-code 1 \
                  --severity HIGH,CRITICAL \
-                 ${DOCKER_REGISTRY_USERNAME}/swiggy:latest || true"
+                 $IMAGE_NAME || true"
 
       - echo "Copying OWASP report back to CodeBuild..."
       - |
@@ -110,9 +110,8 @@ phases:
       # 🔹 Tag + push versioned image (now succeeds)
       - echo "Tagging & pushing versioned Docker image..."
       - |
-        $SSH_CMD "docker tag $IMAGE_NAME ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG} && \
-                  docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}"
-
+        $SSH_CMD "docker tag $IMAGE_NAME docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG} && \
+                  docker push docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}"
 
 
       # 🔹 Update Kubernetes manifest in GitHub
