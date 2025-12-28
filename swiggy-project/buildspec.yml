@@ -75,16 +75,14 @@ phases:
       # 🔹 Build image with fully-resolved name (important!)
       - echo "Building Docker image..."
       - |
-        $SSH_CMD <<EOF
-        cd ~/project/swiggy-project
-        docker build . -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest
-        EOF
+        $SSH_CMD "cd ~/project/swiggy-project && \
+        docker build . -t ${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+
 
       - echo "Pushing latest image..."
       - |
-        $SSH_CMD <<EOF
-        docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:latest
-        EOF
+        $SSH_CMD "docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+
 
 
   post_build:
@@ -108,10 +106,9 @@ phases:
       # 🔹 Tag + push versioned image (now succeeds)
       - echo "Tagging & pushing versioned Docker image..."
       - |
-        $SSH_CMD <<EOF
-        docker tag ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}
-        docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}
-        EOF
+        $SSH_CMD "docker tag ${DOCKER_REGISTRY_USERNAME}/swiggy:latest ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG} && \
+        docker push ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}"
+
 
 
       # 🔹 Update Kubernetes manifest in GitHub
