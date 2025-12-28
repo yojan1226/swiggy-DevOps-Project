@@ -47,8 +47,10 @@ phases:
       - echo "Logging into DockerHub"
       - $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
+      - echo "Preparing image name"
       - IMAGE_NAME="docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
       - echo "Using image: $IMAGE_NAME"
+
 
       - echo "Building Docker Image"
       - $SSH_CMD "cd ~/project/swiggy-project && docker build -t $IMAGE_NAME ."
@@ -64,8 +66,10 @@ phases:
       - echo "Copying OWASP report to CodeBuild"
       - scp -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST:~/dependency-check-reports/owasp-report/dependency-check-report.html .
 
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-7)
+      - echo "Generating image version tag"
+      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-7)
       - echo "Generated Tag = $IMAGE_TAG"
+
 
       - echo "Tagging Versioned Image"
       - $SSH_CMD "docker tag $IMAGE_NAME docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}"
@@ -73,8 +77,26 @@ phases:
       - echo "Pushing Versioned Image"
       - $SSH_CMD "docker push docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}"
 
-      - echo "Updating deployment.yaml in GitHub"
-      - $SSH_CMD "cd ~/project && git config user.email 'codebuild@aws' && git config user.name 'AWS CodeBuild' && sed -i \"s|image: honey120ar/swiggy:.*|image: honey120ar/swiggy:${IMAGE_TAG}|\" k8-manifest/deployment.yaml && git add k8-manifest/deployment.yaml && git commit -m 'Update image tag to ${IMAGE_TAG}' || true && git remote set-url origin https://${GITHUB_TOKEN}@github.com/yojan1226/swiggy-DevOps-Project.git && git push origin HEAD:main"
+      - echo "Updating Kubernetes deployment.yaml in GitHub..."
+      - |
+        $SSH_CMD "
+          set -e
+
+          cd ~/project
+
+          git config user.email 'codebuild@aws'
+          git config user.name 'AWS CodeBuild'
+
+          # Update only the swiggy image line
+          sed -i 's|image: .*swiggy:.*|image: '"${DOCKER_REGISTRY_USERNAME}"'/swiggy:'\"${IMAGE_TAG}\"'|g' k8-manifest/deployment.yaml
+
+          git add k8-manifest/deployment.yaml
+          git commit -m 'Update image tag to ${IMAGE_TAG} from CodeBuild' || true
+
+          git remote set-url origin https://${GITHUB_TOKEN}@github.com/yojan1226/swiggy-DevOps-Project.git
+          git push origin HEAD:main
+        "
+
 
 artifacts:
   files:
