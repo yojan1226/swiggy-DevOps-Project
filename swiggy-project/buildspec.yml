@@ -11,6 +11,7 @@ env:
 
     SONAR_HOST_URL: /myapp/sonar/url
     SONAR_TOKEN: /myapp/sonarqube/codebuild-sonar-token
+    GITHUB_TOKEN: /myapp/github/pat-token
 
 phases:
   install:
@@ -85,19 +86,48 @@ phases:
 
 
   post_build:
-   commands:
-     - echo "Scanning pushed image with Trivy..."
-     - |
-       $SSH_CMD "DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
-                trivy image --exit-code 1 \
-                --severity HIGH,CRITICAL \
-                \${DOCKER_USER}/swiggy:latest || true"
+    commands:
+      - echo "Scanning pushed image with Trivy..."
+      - |
+        $SSH_CMD "DOCKER_USER=$DOCKER_REGISTRY_USERNAME \
+                 trivy image --exit-code 1 \
+                 --severity HIGH,CRITICAL \
+                 \${DOCKER_USER}/swiggy:latest || true"
 
-     - echo "Copying OWASP report back to CodeBuild..."
-     - |
-       scp -o StrictHostKeyChecking=no -i key.pem \
-       $EC2_USER@$EC2_HOST:~/dependency-check-reports/owasp-report/dependency-check-report.html \
-       .
+      - echo "Copying OWASP report back to CodeBuild..."
+      - |
+        scp -o StrictHostKeyChecking=no -i key.pem \
+        $EC2_USER@$EC2_HOST:~/dependency-check-reports/owasp-report/dependency-check-report.html \
+        .
+
+      - echo "Generating image version tag..."
+      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-7)
+      - echo "IMAGE_TAG = $IMAGE_TAG"
+
+      - echo "Tagging & pushing versioned Docker image..."
+      - |
+        $SSH_CMD "
+          DOCKER_USER=$DOCKER_REGISTRY_USERNAME && \
+          docker tag \${DOCKER_USER}/swiggy:latest \${DOCKER_USER}/swiggy:${IMAGE_TAG} && \
+          docker push \${DOCKER_USER}/swiggy:${IMAGE_TAG}
+        "
+
+      - echo "Updating Kubernetes deployment.yaml in GitHub..."
+      - |
+        $SSH_CMD "
+          cd ~/project && \
+
+          git config user.email 'codebuild@aws' && \
+          git config user.name 'AWS CodeBuild' && \
+
+          sed -i \"s|image: honey120ar/swiggy:.*|image: honey120ar/swiggy:${IMAGE_TAG}|\" k8-manifest/deployment.yaml && \
+
+          git add k8-manifest/deployment.yaml && \
+          git commit -m 'Update image tag to ${IMAGE_TAG} from CodeBuild' || true && \
+
+          git remote set-url origin https://${GITHUB_TOKEN}@github.com/yojan1226/swiggy-DevOps-Project.git && \
+          git push origin HEAD:main
+        "
 
 
 
