@@ -131,14 +131,21 @@ phases:
           git config user.email 'codebuild@aws' && \
           git config user.name 'AWS CodeBuild' && \
 
-          sed -i \"s|image: honey120ar/swiggy:.*|image: honey120ar/swiggy:${IMAGE_TAG}|\" k8-manifest/deployment.yaml && \
+          # Switch to k8-manifest branch
+          git fetch origin k8-manifest && \
+          git checkout k8-manifest && \
+          git pull origin k8-manifest && \
+
+          # Update image tag in deployment.yaml
+          sed -i \"s|image: .*/swiggy:.*|image: ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}|\" k8-manifest/deployment.yaml && \
 
           git add k8-manifest/deployment.yaml && \
-          git commit -m "Update image tag to ${IMAGE_TAG} from CodeBuild [skip ci]" || true \
+          git commit -m \"Update image tag to ${IMAGE_TAG} from CodeBuild [skip ci]\" || true && \
 
           git remote set-url origin https://${GITHUB_TOKEN}@github.com/yojan1226/swiggy-DevOps-Project.git && \
-          git push origin HEAD:main
+          git push origin HEAD:k8-manifest
         "
+
 
 artifacts:
   files:
