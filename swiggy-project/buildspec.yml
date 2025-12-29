@@ -72,6 +72,8 @@ phases:
           $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" \
           | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
+      - export DOCKER_USER_TRIM=$(echo "$DOCKER_REGISTRY_USERNAME" | tr -d ' \r\n')
+
       - echo "Preparing image name..."
       - "export IMAGE_NAME=docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
       - "echo Using image: ${IMAGE_NAME}"
@@ -80,12 +82,13 @@ phases:
       # 🔹 Build image with fully-resolved name (important!)
       - echo "Building Docker image..."
       - |
-         $SSH_CMD "
-           export IMAGE_NAME=docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest && \
-           echo Using image: \$IMAGE_NAME && \
-           cd ~/project/swiggy-project && \
-           docker build -t \$IMAGE_NAME .
-         "
+          $SSH_CMD "
+            export DOCKER_USER_TRIM=\$(echo \"$DOCKER_REGISTRY_USERNAME\" | tr -d ' \r\n') && \
+            export IMAGE_NAME=docker.io/\$DOCKER_USER_TRIM/swíggy:latest && \
+            echo Using image: \$IMAGE_NAME && \
+            cd ~/project/swiggy-project && \
+            docker build -t \$IMAGE_NAME .
+          "
 
       - echo "Pushing latest image..."
       - |
