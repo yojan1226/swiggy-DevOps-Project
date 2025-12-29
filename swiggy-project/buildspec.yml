@@ -136,8 +136,14 @@ phases:
           git checkout k8-manifest && \
           git pull origin k8-manifest && \
 
+          # Normalize username (removes spaces, tabs, CRLF)
+          export DOCKER_USER_TRIM=\$(echo \"$DOCKER_REGISTRY_USERNAME\" | tr -d ' \r\n') && \
+          echo Using registry user: \$DOCKER_USER_TRIM && \
+
           # Update image tag in deployment.yaml
-          sed -i \"s|image: .*/swiggy:.*|image: ${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}|\" k8-manifest/deployment.yaml && \
+          sed -i \"s|image: .*swiggy:.*|image: \$DOCKER_USER_TRIM/swiggy:${IMAGE_TAG}|g\" k8-manifest/deployment.yaml && \
+
+          echo Updated manifest to: \$DOCKER_USER_TRIM/swiggy:${IMAGE_TAG} && \
 
           git add k8-manifest/deployment.yaml && \
           git commit -m \"Update image tag to ${IMAGE_TAG} from CodeBuild [skip ci]\" || true && \
