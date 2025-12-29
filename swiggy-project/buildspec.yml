@@ -75,9 +75,8 @@ phases:
       - export DOCKER_USER_TRIM=$(echo "$DOCKER_REGISTRY_USERNAME" | tr -d ' \r\n')
 
       - echo "Preparing image name..."
-      - export IMAGE_NAME=docker.io/${DOCKER_USER_TRIM}/swiggy:latest
-      - echo "Using image: $IMAGE_NAME"
-
+      - "export IMAGE_NAME=docker.io/${DOCKER_USER_TRIM}/swiggy:latest"
+      - "echo Using image: ${IMAGE_NAME}"
 
       # 🔹 Build image with fully-resolved name (important!)
       - echo "Building Docker image..."
