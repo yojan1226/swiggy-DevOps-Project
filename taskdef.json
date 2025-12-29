@@ -1,0 +1,21 @@
+{
+  "family": "swiggy-task",
+  "networkMode": "bridge",
+  "requiresCompatibilities": ["EC2"],
+  "executionRoleArn": "arn:aws:iam::122931672162:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "swiggy-container",
+      "image": "honey120ar/swiggy:latest",
+      "essential": true,
+      "memoryReservation": 256,
+      "portMappings": [
+        {
+          "containerPort": 3000,
+          "hostPort": 0,
+          "protocol": "tcp"
+        }
+      ]
+    }
+  ]
+}

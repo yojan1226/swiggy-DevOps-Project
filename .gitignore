@@ -1,0 +1,29 @@
+# --------------------------
+# Node.js (Swiggy Project)
+# --------------------------
+swiggy-project/node_modules/
+swiggy-project/.env
+swiggy-project/build/
+swiggy-project/dist/
+
+# --------------------------
+# Terraform
+# --------------------------
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+
+# Ignore tfvars (contains secrets)
+terraform/*.tfvars
+terraform/*.tfstate
+terraform/*.tfstate.backup
+
+# Crash logs
+terraform/crash.log
+terraform/*.log
+
+# --------------------------
+# OS / Editor Files
+# --------------------------
+.DS_Store
+*.swp
+*.swo
