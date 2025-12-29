@@ -73,8 +73,9 @@ phases:
           | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
       - echo "Preparing image name..."
-      - export IMAGE_NAME="docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
-      - echo "Using image: $IMAGE_NAME"
+      - "export IMAGE_NAME=docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+      - "echo Using image: ${IMAGE_NAME}"
+
 
       # 🔹 Build image with fully-resolved name (important!)
       - echo "Building Docker image..."
