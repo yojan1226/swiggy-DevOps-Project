@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: swiggy-cont
-          image: honey120ar/swiggy:latest
+          image: honey120ar/swiggy:ed3fc4a
           ports:
             - containerPort: 3000
           imagePullPolicy: Always
