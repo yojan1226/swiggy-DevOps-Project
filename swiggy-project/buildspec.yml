@@ -69,8 +69,8 @@ phases:
 
       - echo "Logging into DockerHub..."
       - |
-        $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" \
-                  | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
+          $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" \
+          | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
       - echo "Preparing image name..."
       - export IMAGE_NAME="docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
@@ -79,8 +79,8 @@ phases:
       # 🔹 Build image with fully-resolved name (important!)
       - echo "Building Docker image..."
       - |
-        $SSH_CMD "cd ~/project/swiggy-project && \
-            docker build -t $IMAGE_NAME ."
+          $SSH_CMD "cd ~/project/swiggy-project && \
+          docker build -t $IMAGE_NAME ."
 
 
       - echo "Pushing latest image..."
@@ -135,4 +135,4 @@ phases:
 artifacts:
   files:
     - appspec.yaml
-    - taskdef.json i updated the trivy block also so please verify it again 
+    - taskdef.json 
