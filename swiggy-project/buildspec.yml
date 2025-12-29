@@ -134,7 +134,7 @@ phases:
           sed -i \"s|image: honey120ar/swiggy:.*|image: honey120ar/swiggy:${IMAGE_TAG}|\" k8-manifest/deployment.yaml && \
 
           git add k8-manifest/deployment.yaml && \
-          git commit -m 'Update image tag to ${IMAGE_TAG} from CodeBuild' || true && \
+          git commit -m "Update image tag to ${IMAGE_TAG} from CodeBuild [skip ci]" || true \
 
           git remote set-url origin https://${GITHUB_TOKEN}@github.com/yojan1226/swiggy-DevOps-Project.git && \
           git push origin HEAD:main
