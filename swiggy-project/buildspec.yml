@@ -17,88 +17,122 @@ phases:
 
   install:
     commands:
-      - echo "Preparing SSH key"
+      - echo "Preparing SSH key..."
       - echo "$EC2_SSH_KEY" > key.pem
       - chmod 600 key.pem
       - export SSH_CMD="ssh -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST"
 
   pre_build:
     commands:
-      - echo "Cloning repo on EC2"
-      - $SSH_CMD "rm -rf ~/project && git clone https://github.com/yojan1226/swiggy-DevOps-Project.git ~/project"
+      - echo "Cloning fresh repository in EC2..."
+      - |
+        $SSH_CMD "sudo rm -rf ~/project && \
+                  git clone https://github.com/yojan1226/swiggy-DevOps-Project.git ~/project"
 
-      - echo "Installing npm dependencies"
-      - $SSH_CMD "cd ~/project/swiggy-project && npm install"
+      - echo "Installing NPM dependencies..."
+      - |
+        $SSH_CMD "cd ~/project/swiggy-project && npm install"
 
-      - echo "Running OWASP Dependency Check"
-      - $SSH_CMD "mkdir -p ~/dependency-check-reports && dependency-check --scan ~/project/swiggy-project --out ~/dependency-check-reports/owasp-report --data ~/dependency-check-data --noupdate --disableVersionCheck || true"
+      - echo "Running OWASP Dependency-Check..."
+      - |
+        $SSH_CMD "
+          mkdir -p ~/dependency-check-reports && \
+          dependency-check \
+            --scan ~/project/swiggy-project \
+            --out ~/dependency-check-reports/owasp-report \
+            --data ~/dependency-check-data \
+            --noupdate \
+            --disableVersionCheck \
+            || echo 'OWASP warnings ignored'
+        "
 
-      - echo "Running SonarQube Scan"
-      - $SSH_CMD "cd ~/project/swiggy-project && sonar-scanner -Dsonar.projectKey=swiggy-react-app -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN"
+      - echo "Running SonarQube Scanner..."
+      - |
+        $SSH_CMD "cd ~/project/swiggy-project && \
+                  sonar-scanner \
+                    -Dsonar.projectKey=swiggy-react-app \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=$SONAR_HOST_URL \
+                    -Dsonar.login=$SONAR_TOKEN"
 
   build:
     commands:
-      - echo "Running Trivy FS Scan"
-      - $SSH_CMD "trivy fs --exit-code 1 --severity HIGH,CRITICAL ~/project/swiggy-project || true"
+      - echo "Running Trivy filesystem scan..."
+      - |
+        $SSH_CMD "trivy fs --exit-code 1 \
+                  --severity HIGH,CRITICAL \
+                  ~/project/swiggy-project || true"
 
-      - echo "Building React App"
-      - $SSH_CMD "cd ~/project/swiggy-project && npm run build"
+      - echo "Building React project..."
+      - |
+        $SSH_CMD "cd ~/project/swiggy-project && npm run build"
 
-      - echo "Logging into DockerHub"
-      - $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
+      - echo "Logging into DockerHub..."
+      - |
+        $SSH_CMD "echo \"$DOCKER_REGISTRY_PASSWORD\" \
+                  | docker login -u \"$DOCKER_REGISTRY_USERNAME\" --password-stdin"
 
-      - echo "Preparing image name"
-      - IMAGE_NAME="docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
+      - echo "Preparing image name..."
+      - export IMAGE_NAME="docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:latest"
       - echo "Using image: $IMAGE_NAME"
 
+      # 🔹 Build image with fully-resolved name (important!)
+      - echo "Building Docker image..."
+      - |
+        $SSH_CMD "cd ~/project/swiggy-project && \
+            docker build -t $IMAGE_NAME ."
 
-      - echo "Building Docker Image"
-      - $SSH_CMD "cd ~/project/swiggy-project && docker build -t $IMAGE_NAME ."
 
-      - echo "Pushing latest image"
-      - $SSH_CMD "docker push $IMAGE_NAME"
+      - echo "Pushing latest image..."
+      - |
+        $SSH_CMD "docker push $IMAGE_NAME"
+
+
 
   post_build:
     commands:
-      - echo "Running Trivy Image Scan"
-      - $SSH_CMD "trivy image --exit-code 1 --severity HIGH,CRITICAL $IMAGE_NAME || true"
+      - echo "Scanning pushed image with Trivy..."
+      - |
+        $SSH_CMD "trivy image --exit-code 1 \
+                 --severity HIGH,CRITICAL \
+                 $IMAGE_NAME || true"
 
-      - echo "Copying OWASP report to CodeBuild"
-      - scp -o StrictHostKeyChecking=no -i key.pem $EC2_USER@$EC2_HOST:~/dependency-check-reports/owasp-report/dependency-check-report.html .
+      - echo "Copying OWASP report back to CodeBuild..."
+      - |
+        scp -o StrictHostKeyChecking=no -i key.pem \
+        $EC2_USER@$EC2_HOST:~/dependency-check-reports/owasp-report/dependency-check-report.html \
+        .
 
-      - echo "Generating image version tag"
+      - echo "Generating image version tag..."
       - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-7)
-      - echo "Generated Tag = $IMAGE_TAG"
+      - echo "IMAGE_TAG = $IMAGE_TAG"
+
+      # 🔹 Tag + push versioned image (now succeeds)
+      - echo "Tagging & pushing versioned Docker image..."
+      - |
+        $SSH_CMD "docker tag $IMAGE_NAME docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG} && \
+                  docker push docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}"
 
 
-      - echo "Tagging Versioned Image"
-      - $SSH_CMD "docker tag $IMAGE_NAME docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}"
-
-      - echo "Pushing Versioned Image"
-      - $SSH_CMD "docker push docker.io/${DOCKER_REGISTRY_USERNAME}/swiggy:${IMAGE_TAG}"
-
+      # 🔹 Update Kubernetes manifest in GitHub
       - echo "Updating Kubernetes deployment.yaml in GitHub..."
       - |
         $SSH_CMD "
-          set -e
+          cd ~/project && \
 
-          cd ~/project
+          git config user.email 'codebuild@aws' && \
+          git config user.name 'AWS CodeBuild' && \
 
-          git config user.email 'codebuild@aws'
-          git config user.name 'AWS CodeBuild'
+          sed -i \"s|image: honey120ar/swiggy:.*|image: honey120ar/swiggy:${IMAGE_TAG}|\" k8-manifest/deployment.yaml && \
 
-          # Update only the swiggy image line
-          sed -i 's|image: .*swiggy:.*|image: '"${DOCKER_REGISTRY_USERNAME}"'/swiggy:'\"${IMAGE_TAG}\"'|g' k8-manifest/deployment.yaml
+          git add k8-manifest/deployment.yaml && \
+          git commit -m 'Update image tag to ${IMAGE_TAG} from CodeBuild' || true && \
 
-          git add k8-manifest/deployment.yaml
-          git commit -m 'Update image tag to ${IMAGE_TAG} from CodeBuild' || true
-
-          git remote set-url origin https://${GITHUB_TOKEN}@github.com/yojan1226/swiggy-DevOps-Project.git
+          git remote set-url origin https://${GITHUB_TOKEN}@github.com/yojan1226/swiggy-DevOps-Project.git && \
           git push origin HEAD:main
         "
-
 
 artifacts:
   files:
     - appspec.yaml
-    - taskdef.json
+    - taskdef.json i updated the trivy block also so please verify it again 
